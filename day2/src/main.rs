@@ -2,13 +2,26 @@ use std::fs::read_to_string;
 
 fn main() {
     let data = read_to_string("test-data.txt").unwrap();
-    let mut ints: Vec<i32> = data
+    let ints: Vec<i32> = data
         .trim_end()
         .split(",")
         .map(|s| s.parse::<i32>().unwrap())
         .collect();
-    run(&mut ints);
-    println!("{:?}", ints);
+
+    for noun in 0..=99 {
+        for verb in 0..=99 {
+            let mut scratch = ints.clone();
+            scratch[1] = noun;
+            scratch[2] = verb;
+            run(&mut scratch);
+            let output = scratch[0];
+            if output == 19690720 {
+                println!("{}, {} => {}", noun, verb, output);
+                let answer = (100 * noun) + verb;
+                println!("{}", answer);
+            }
+        }
+    }
 }
 
 fn run(ints: &mut Vec<i32>) {
@@ -23,10 +36,10 @@ fn run(ints: &mut Vec<i32>) {
                 let lhs = ints[lhs_p];
                 let rhs = ints[rhs_p];
                 let result = lhs + rhs;
-                println!(
-                    "[{}] <- [{}] + [{}] ; {} + {} = {}",
-                    trg_p, lhs_p, rhs_p, lhs, rhs, result
-                );
+                // println!(
+                //     "[{}] <- [{}] + [{}] ; {} + {} = {}",
+                //     trg_p, lhs_p, rhs_p, lhs, rhs, result
+                // );
                 ints[trg_p] = result;
                 ip += 4;
             }
@@ -37,15 +50,15 @@ fn run(ints: &mut Vec<i32>) {
                 let lhs = ints[lhs_p];
                 let rhs = ints[rhs_p];
                 let result = lhs * rhs;
-                println!(
-                    "[{}] <- [{}] * [{}] ; {} * {} = {}",
-                    trg_p, lhs_p, rhs_p, lhs, rhs, result
-                );
+                // println!(
+                //     "[{}] <- [{}] * [{}] ; {} * {} = {}",
+                //     trg_p, lhs_p, rhs_p, lhs, rhs, result
+                // );
                 ints[trg_p] = result;
                 ip += 4;
             }
             _ => {
-                println!("{:?}", ints);
+                // println!("{:?}", ints);
                 return;
             }
         }
