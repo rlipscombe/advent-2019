@@ -43,22 +43,22 @@ defmodule Day3 do
   defp get_points_visited_by_path([], pos, visited), do: {visited, pos}
 
   defp do_step({:l, n}, {x, y}, visited) do
-    visited = Enum.reduce(x..(x - n), visited, fn i, v -> MapSet.put(v, {i, y}) end)
+    visited = Enum.reduce(0..n, visited, fn i, v -> MapSet.put(v, {x - i, y}) end)
     {visited, {x - n, y}}
   end
 
   defp do_step({:r, n}, {x, y}, visited) do
-    visited = Enum.reduce(x..(x + n), visited, fn i, v -> MapSet.put(v, {i, y}) end)
+    visited = Enum.reduce(0..n, visited, fn i, v -> MapSet.put(v, {x + i, y}) end)
     {visited, {x + n, y}}
   end
 
   defp do_step({:u, n}, {x, y}, visited) do
-    visited = Enum.reduce(y..(y + n), visited, fn j, v -> MapSet.put(v, {x, j}) end)
+    visited = Enum.reduce(0..n, visited, fn j, v -> MapSet.put(v, {x, y + j}) end)
     {visited, {x, y + n}}
   end
 
   defp do_step({:d, n}, {x, y}, visited) do
-    visited = Enum.reduce(y..(y - n), visited, fn j, v -> MapSet.put(v, {x, j}) end)
+    visited = Enum.reduce(0..n, visited, fn j, v -> MapSet.put(v, {x, y - j}) end)
     {visited, {x, y - n}}
   end
 
