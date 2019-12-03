@@ -26,7 +26,7 @@ defmodule Day3 do
 
     # Which of those is closest to the origin?
     intersections |> MapSet.delete({0, 0})
-    |> Enum.map(&manhatten/1)
+    |> Enum.map(&manhattan/1)
     |> Enum.sort
     |> Enum.at(0)
   end
@@ -66,7 +66,7 @@ defmodule Day3 do
     MapSet.intersection(a, b)
   end
 
-  defp manhatten({x, y}) do
+  defp manhattan({x, y}) do
     abs(x) + abs(y)
   end
 end
