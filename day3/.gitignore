@@ -22,3 +22,5 @@ erl_crash.dump
 # Ignore package tarball (built via "mix hex.build").
 day3-*.tar
 
+.elixir_ls/
+test-data.txt
