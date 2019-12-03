@@ -13,23 +13,23 @@ defmodule Day3Test do
   end
 
   test "get_points_visited_by_path 1" do
-    assert {_, {8,0}} = Day3.get_points_visited_by_path("R8")
+    assert {_, {8, 0, _}} = Day3.get_points_visited_by_path("R8")
   end
 
   test "get_points_visited_by_path 2" do
-    assert {_, {8,5}} = Day3.get_points_visited_by_path("R8,U5")
+    assert {_, {8, 5, _}} = Day3.get_points_visited_by_path("R8,U5")
   end
 
   test "get_points_visited_by_path 3" do
-    assert {_, {3,5}} = Day3.get_points_visited_by_path("R8,U5,L5")
+    assert {_, {3, 5, _}} = Day3.get_points_visited_by_path("R8,U5,L5")
   end
 
   test "get_points_visited_by_path 4" do
-    assert {_, {3,2}} = Day3.get_points_visited_by_path("R8,U5,L5,D3")
+    assert {_, {3, 2, _}} = Day3.get_points_visited_by_path("R8,U5,L5,D3")
   end
 
   test "negative points" do
-    assert {_, {-3, -6}} = Day3.get_points_visited_by_path("R1,U1,L4,D7")
+    assert {_, {-3, -6, _}} = Day3.get_points_visited_by_path("R1,U1,L4,D7")
     assert Day3.get_closest_intersection_for_paths("R1,U1", "U1,R1") == 2
   end
 

@@ -1,6 +1,6 @@
 defmodule Day3 do
   def paths_from_file(f) do
-    [a,b] = File.read!(f) |> String.split("\n", trim: true)
+    [a, b] = File.read!(f) |> String.split("\n", trim: true)
     {a, b}
   end
 
@@ -25,14 +25,15 @@ defmodule Day3 do
     intersections = get_shared_points(points_a, points_b)
 
     # Which of those is closest to the origin?
-    intersections |> MapSet.delete({0, 0})
+    intersections
+    |> MapSet.delete({0, 0})
     |> Enum.map(&manhattan/1)
-    |> Enum.sort
+    |> Enum.sort()
     |> Enum.at(0)
   end
 
   def get_points_visited_by_path(path) do
-    get_points_visited_by_path(path_from_string(path), {0, 0}, %MapSet{})
+    get_points_visited_by_path(path_from_string(path), {0, 0, 0}, %MapSet{})
   end
 
   defp get_points_visited_by_path([step | rest], pos0, visited0) do
@@ -42,24 +43,32 @@ defmodule Day3 do
 
   defp get_points_visited_by_path([], pos, visited), do: {visited, pos}
 
-  defp do_step({:l, n}, {x, y}, visited) do
-    visited = Enum.reduce(0..n, visited, fn i, v -> MapSet.put(v, {x - i, y}) end)
-    {visited, {x - n, y}}
+  defp do_step({:l, n}, {x0, y0, c0}, visited0) do
+    {visited, c} =
+      Enum.reduce(0..n, {visited0, c0}, fn i, {v, c} -> {MapSet.put(v, {x0 - i, y0}), c + 1} end)
+
+    {visited, {x0 - n, y0, c}}
   end
 
-  defp do_step({:r, n}, {x, y}, visited) do
-    visited = Enum.reduce(0..n, visited, fn i, v -> MapSet.put(v, {x + i, y}) end)
-    {visited, {x + n, y}}
+  defp do_step({:r, n}, {x0, y0, c0}, visited0) do
+    {visited, c} =
+      Enum.reduce(0..n, {visited0, c0}, fn i, {v, c} -> {MapSet.put(v, {x0 + i, y0}), c + 1} end)
+
+    {visited, {x0 + n, y0, c}}
   end
 
-  defp do_step({:u, n}, {x, y}, visited) do
-    visited = Enum.reduce(0..n, visited, fn j, v -> MapSet.put(v, {x, y + j}) end)
-    {visited, {x, y + n}}
+  defp do_step({:u, n}, {x0, y0, c0}, visited0) do
+    {visited, c} =
+      Enum.reduce(0..n, {visited0, c0}, fn j, {v, c} -> {MapSet.put(v, {x0, y0 + j}), c + 1} end)
+
+    {visited, {x0, y0 + n, c}}
   end
 
-  defp do_step({:d, n}, {x, y}, visited) do
-    visited = Enum.reduce(0..n, visited, fn j, v -> MapSet.put(v, {x, y - j}) end)
-    {visited, {x, y - n}}
+  defp do_step({:d, n}, {x0, y0, c0}, visited0) do
+    {visited, c} =
+      Enum.reduce(0..n, {visited0, c0}, fn j, {v, c} -> {MapSet.put(v, {x0, y0 - j}), c + 1} end)
+
+    {visited, {x0, y0 - n, c}}
   end
 
   defp get_shared_points(a, b) do
