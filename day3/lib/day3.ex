@@ -33,7 +33,7 @@ defmodule Day3 do
   end
 
   def get_points_visited_by_path(path) do
-    get_points_visited_by_path(path_from_string(path), {0, 0, 0}, %MapSet{})
+    get_points_visited_by_path(path_from_string(path), {0, 0, 0}, %{})
   end
 
   defp get_points_visited_by_path([step | rest], pos0, visited0) do
@@ -43,36 +43,34 @@ defmodule Day3 do
 
   defp get_points_visited_by_path([], pos, visited), do: {visited, pos}
 
-  defp do_step({:l, n}, {x0, y0, c0}, visited0) do
-    {visited, c} =
-      Enum.reduce(0..n, {visited0, c0}, fn i, {v, c} -> {MapSet.put(v, {x0 - i, y0}), c + 1} end)
+  defp do_step({:l, n}, {x, y, c}, visited0) do
+    visited = Enum.reduce(0..n, visited0, fn i, v -> Map.put(v, {x - i, y}, c + i) end)
 
-    {visited, {x0 - n, y0, c}}
+    {visited, {x - n, y, c + n}}
   end
 
-  defp do_step({:r, n}, {x0, y0, c0}, visited0) do
-    {visited, c} =
-      Enum.reduce(0..n, {visited0, c0}, fn i, {v, c} -> {MapSet.put(v, {x0 + i, y0}), c + 1} end)
+  defp do_step({:r, n}, {x, y, c}, visited0) do
+    visited = Enum.reduce(0..n, visited0, fn i, v -> Map.put(v, {x + i, y}, c + i) end)
 
-    {visited, {x0 + n, y0, c}}
+    {visited, {x + n, y, c + n}}
   end
 
-  defp do_step({:u, n}, {x0, y0, c0}, visited0) do
-    {visited, c} =
-      Enum.reduce(0..n, {visited0, c0}, fn j, {v, c} -> {MapSet.put(v, {x0, y0 + j}), c + 1} end)
+  defp do_step({:u, n}, {x, y, c}, visited0) do
+    visited = Enum.reduce(0..n, visited0, fn j, v -> Map.put(v, {x, y + j}, c + j) end)
 
-    {visited, {x0, y0 + n, c}}
+    {visited, {x, y + n, c + n}}
   end
 
-  defp do_step({:d, n}, {x0, y0, c0}, visited0) do
-    {visited, c} =
-      Enum.reduce(0..n, {visited0, c0}, fn j, {v, c} -> {MapSet.put(v, {x0, y0 - j}), c + 1} end)
+  defp do_step({:d, n}, {x, y, c}, visited0) do
+    visited = Enum.reduce(0..n, visited0, fn j, v -> Map.put(v, {x, y - j}, c + j) end)
 
-    {visited, {x0, y0 - n, c}}
+    {visited, {x, y - n, c + n}}
   end
 
   defp get_shared_points(a, b) do
-    MapSet.intersection(a, b)
+    ka = a |> Map.keys |> Enum.into(%MapSet{})
+    kb = b |> Map.keys |> Enum.into(%MapSet{})
+    MapSet.intersection(ka, kb)
   end
 
   defp manhattan({x, y}) do
