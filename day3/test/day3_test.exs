@@ -49,6 +49,6 @@ defmodule Day3Test do
 
   test "puzzle" do
     {a, b} = Day3.paths_from_file("test-data.txt")
-    Day3.get_closest_intersection_for_paths(a, b) |> IO.inspect
+    assert Day3.get_closest_intersection_for_paths(a, b) == 489
   end
 end
