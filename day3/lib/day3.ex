@@ -32,6 +32,24 @@ defmodule Day3 do
     |> Enum.at(0)
   end
 
+  def get_lowest_cost_for_paths(path_a, path_b) do
+    # Work out which points each path visits.
+    {points_a, _} = get_points_visited_by_path(path_a)
+    {points_b, _} = get_points_visited_by_path(path_b)
+
+    # Work out where they intersect, ignoring the origin.
+    intersections = get_shared_points(points_a, points_b) |> MapSet.delete({0, 0})
+
+    intersections
+    |> Enum.map(fn k ->
+      a = Map.get(points_a, k)
+      b = Map.get(points_b, k)
+      a + b
+    end)
+    |> Enum.sort()
+    |> Enum.at(0)
+  end
+
   def get_points_visited_by_path(path) do
     get_points_visited_by_path(path_from_string(path), {0, 0, 0}, %{})
   end
@@ -68,8 +86,8 @@ defmodule Day3 do
   end
 
   defp get_shared_points(a, b) do
-    ka = a |> Map.keys |> Enum.into(%MapSet{})
-    kb = b |> Map.keys |> Enum.into(%MapSet{})
+    ka = a |> Map.keys() |> Enum.into(%MapSet{})
+    kb = b |> Map.keys() |> Enum.into(%MapSet{})
     MapSet.intersection(ka, kb)
   end
 
