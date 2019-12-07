@@ -1,3 +1,7 @@
+use std::thread;
+use std::sync::mpsc;
+use std::time::Duration;
+
 use crate::interpreter::Interpreter;
 
 pub struct Amplifiers {
@@ -11,21 +15,38 @@ impl Amplifiers {
     }
 
     pub fn run(self) -> i32 {
-        let mut v = 0;
-        for i in 0..5 {
-            let p = self.settings[i];
-            let mut computer = Interpreter::from_source(self.source.clone());
-            let inputs = vec![p, v];
-            let mut input_cursor = 0;
-            let mut outputs = vec![];
-            let input = || { let result = inputs[input_cursor]; input_cursor +=1; return Some(result); };
-            let output = |v| { outputs.push(v); };
-            computer.run(input, output);
-            v = outputs[0]
-        }
+        let (s0, ra) = mpsc::channel();
+        let (sa, rb) = mpsc::channel();
+        let (sb, rc) = mpsc::channel();
+        let (sc, rd) = mpsc::channel();
+        let (sd, re) = mpsc::channel();
+        let (se, r0) = mpsc::channel();
+        spawn("A".to_string(), &self.source, ra, sa.clone());
+        spawn("B".to_string(), &self.source, rb, sb.clone());
+        spawn("C".to_string(), &self.source, rc, sc.clone());
+        spawn("D".to_string(), &self.source, rd, sd.clone());
+        spawn("E".to_string(), &self.source, re, se.clone());
 
+        s0.send(self.settings[0]).unwrap();
+        sa.send(self.settings[1]).unwrap();
+        sb.send(self.settings[2]).unwrap();
+        sc.send(self.settings[3]).unwrap();
+        sd.send(self.settings[4]).unwrap();
+
+        s0.send(0).unwrap();
+        let v = r0.recv().unwrap();
         v
     }
+}
+
+fn spawn(name: String, source: &String, input: mpsc::Receiver<i32>, output: mpsc::Sender<i32>) {
+    let mut i = Interpreter::from_source(source.clone());
+    thread::Builder::new().name(name).spawn(move || {
+        println!("spawning");
+        let inp = || { input.recv().ok() };
+        let outp = |x| { output.send(x).unwrap(); };
+        i.run(inp, outp);
+    }).unwrap();
 }
 
 #[test]
