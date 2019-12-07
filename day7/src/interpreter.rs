@@ -132,7 +132,7 @@ impl Interpreter {
                     let trg_p = self.read(self.ip + 3) as usize;
                     let result = lhs * rhs;
                     println!(
-                        "{}: [{}] <- [{}] * [{}]  ; {} - {} = {}",
+                        "{}: [{}] <- [{}] * [{}]  ; {} * {} = {}",
                         self.ip,
                         self.read(self.ip + 3),
                         self.read(self.ip + 1),
@@ -150,7 +150,7 @@ impl Interpreter {
                     let trg_p = self.read(self.ip + 3) as usize;
                     let result = lhs * rhs;
                     println!(
-                        "{}: [{}] <- {} * [{}]  ; {} - {} = {}",
+                        "{}: [{}] <- {} * [{}]  ; {} * {} = {}",
                         self.ip,
                         self.read(self.ip + 3),
                         self.read(self.ip + 1),
@@ -168,7 +168,7 @@ impl Interpreter {
                     let trg_p = self.read(self.ip + 3) as usize;
                     let result = lhs * rhs;
                     println!(
-                        "{}: [{}] <- [{}] * {}  ; {} - {} = {}",
+                        "{}: [{}] <- [{}] * {}  ; {} * {} = {}",
                         self.ip,
                         self.read(self.ip + 3),
                         self.read(self.ip + 1),
@@ -186,7 +186,7 @@ impl Interpreter {
                     let trg_p = self.read(self.ip + 3) as usize;
                     let result = lhs * rhs;
                     println!(
-                        "{}: [{}] <- {} * {}  ; {} - {} = {}",
+                        "{}: [{}] <- {} * {}  ; {} * {} = {}",
                         self.ip,
                         self.read(self.ip + 3),
                         self.read(self.ip + 1),
@@ -370,7 +370,7 @@ impl Interpreter {
                     let trg_p = self.read(self.ip + 3) as usize;
                     let result = lhs == rhs;
                     println!(
-                        "{}: [{}] <- {} eq [{}]  ; {} == {} = {}",
+                        "{}: [{}] <- [{}] eq {}  ; {} == {} = {}",
                         self.ip,
                         self.read(self.ip + 3),
                         self.read(self.ip + 1),
@@ -424,7 +424,7 @@ impl Interpreter {
                     let trg_p = self.read(self.ip + 3) as usize;
                     let result = lhs < rhs;
                     println!(
-                        "{}: [{}] <- [{}] lt {}  ; {} lt {} = {}",
+                        "{}: [{}] <- {} lt [{}]  ; {} lt {} = {}",
                         self.ip,
                         self.read(self.ip + 3),
                         self.read(self.ip + 1),
@@ -460,7 +460,7 @@ impl Interpreter {
                     let trg_p = self.read(self.ip + 3) as usize;
                     let result = lhs < rhs;
                     println!(
-                        "{}: [{}] <- [{}] lt {}  ; {} lt {} = {}",
+                        "{}: [{}] <- {} lt {}  ; {} lt {} = {}",
                         self.ip,
                         self.read(self.ip + 3),
                         self.read(self.ip + 1),
