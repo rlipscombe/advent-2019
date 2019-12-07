@@ -26,3 +26,4 @@ day6-*.tar
 *.txt
 day6
 *.png
+.elixir_ls/
