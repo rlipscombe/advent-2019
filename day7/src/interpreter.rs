@@ -49,9 +49,8 @@ impl Interpreter {
         }
     }
 
-    pub fn run(&mut self, inputs: Vec<i32>) -> Vec<i32> {
-        let mut input_cursor = 0;
-        let mut outputs: Vec<i32> = Vec::new();
+    pub fn run<I, O>(&mut self, mut input: I, mut output: O)
+    where I: FnMut() -> Option<i32>, O:FnMut(i32) {
         loop {
             match self.read_op(self.ip) {
                 OP_ADD_PP => {
@@ -200,8 +199,7 @@ impl Interpreter {
                 }
                 OP_INPUT_P => {
                     let p = self.read(self.ip + 1) as usize;
-                    let value = inputs[input_cursor];
-                    input_cursor += 1;
+                    let value = input().unwrap();
                     println!(
                         "{}: [{}] <- in  ; {}",
                         self.ip,
@@ -214,13 +212,13 @@ impl Interpreter {
                 OP_OUTPUT_P => {
                     let value = self.read_via(self.ip + 1);
                     println!("{}: out [{}] = {}", self.ip, self.read(self.ip + 1), value);
-                    outputs.push(value);
+                    output(value);
                     self.ip += 2;
                 }
                 OP_OUTPUT_I => {
                     let value = self.read(self.ip + 1);
                     println!("{}: out {} = {}", self.ip, self.read(self.ip + 1), value);
-                    outputs.push(value);
+                    output(value);
                     self.ip += 2;
                 }
                 OP_JT_IP => {
@@ -474,7 +472,7 @@ impl Interpreter {
                 }
                 OP_HALT => {
                     println!("{}: halt", self.ip);
-                    return outputs;
+                    return;
                 }
                 op => {
                     panic!("Invalid opcode {}", op);
@@ -503,83 +501,111 @@ impl Interpreter {
 #[test]
 fn test_add_pp() {
     let mut computer = Interpreter::from_source("1,7,8,0,4,0,99,-12,12".to_string());
-    assert_eq!(vec![0], computer.run(vec![]));
+    let mut outputs = vec![];
+    computer.run(|| {None}, |o| {outputs.push(o)});
+    assert_eq!(vec![0], outputs);
 }
 
 #[test]
 fn test_add_ip() {
     let mut computer = Interpreter::from_source("101,-12,8,0,4,0,99,0,12".to_string());
-    assert_eq!(vec![0], computer.run(vec![]));
+    let mut outputs = vec![];
+    computer.run(|| {None}, |o| {outputs.push(o)});
+    assert_eq!(vec![0], outputs);
 }
 
 #[test]
 fn test_add_pi() {
     let mut computer = Interpreter::from_source("1001,8,-12,0,4,0,99,0,12".to_string());
-    assert_eq!(vec![0], computer.run(vec![]));
+    let mut outputs = vec![];
+    computer.run(|| {None}, |o| {outputs.push(o)});
+    assert_eq!(vec![0], outputs);
 }
 
 #[test]
 fn test_add_ii() {
     let mut computer = Interpreter::from_source("1101,123,-123,0,4,0,99".to_string());
-    assert_eq!(vec![0], computer.run(vec![]));
+    let mut outputs = vec![];
+    computer.run(|| {None}, |o| {outputs.push(o)});
+    assert_eq!(vec![0], outputs);
 }
 
 #[test]
 fn test_eq_8() {
     let mut computer = Interpreter::from_source("3,9,8,9,10,9,4,9,99,-1,8".to_string());
-    assert_eq!(vec![1], computer.run(vec![8]));
+    let mut outputs = vec![];
+    computer.run(|| {Some(8)}, |o| {outputs.push(o)});
+    assert_eq!(vec![1], outputs);
 }
 
 #[test]
 fn test_neq_8() {
     let mut computer = Interpreter::from_source("3,9,8,9,10,9,4,9,99,-1,8".to_string());
-    assert_eq!(vec![0], computer.run(vec![-8]));
+    let mut outputs = vec![];
+    computer.run(|| {Some(-8)}, |o| {outputs.push(o)});
+    assert_eq!(vec![0], outputs);
 }
 
 #[test]
 fn test_lt_8() {
     let mut computer = Interpreter::from_source("3,9,7,9,10,9,4,9,99,-1,8".to_string());
-    assert_eq!(vec![1], computer.run(vec![7]));
+    let mut outputs = vec![];
+    computer.run(|| {Some(7)}, |o| {outputs.push(o)});
+    assert_eq!(vec![1], outputs);
 }
 
 #[test]
 fn test_nlt_8() {
     let mut computer = Interpreter::from_source("3,9,7,9,10,9,4,9,99,-1,8".to_string());
-    assert_eq!(vec![0], computer.run(vec![8]));
+    let mut outputs = vec![];
+    computer.run(|| {Some(8)}, |o| {outputs.push(o)});
+    assert_eq!(vec![0], outputs);
 }
 
 #[test]
 fn test_eq_ii_8() {
     let mut computer = Interpreter::from_source("3,3,1108,-1,8,3,4,3,99".to_string());
-    assert_eq!(vec![1], computer.run(vec![8]));
+    let mut outputs = vec![];
+    computer.run(|| {Some(8)}, |o| {outputs.push(o)});
+    assert_eq!(vec![1], outputs);
 }
 
 #[test]
 fn test_neq_ii_8() {
     let mut computer = Interpreter::from_source("3,3,1108,-1,8,3,4,3,99".to_string());
-    assert_eq!(vec![0], computer.run(vec![7]));
+    let mut outputs = vec![];
+    computer.run(|| {Some(7)}, |o| {outputs.push(o)});
+    assert_eq!(vec![0], outputs);
 }
 
 #[test]
 fn test_jf_pp_z() {
     let mut computer = Interpreter::from_source("3,12,6,12,15,1,13,14,13,4,13,99,-1,0,1,9".to_string());
-    assert_eq!(vec![0], computer.run(vec![0]));
+    let mut outputs = vec![];
+    computer.run(|| {Some(0)}, |o| {outputs.push(o)});
+    assert_eq!(vec![0], outputs);
 }
 
 #[test]
 fn test_jt_ii_z() {
     let mut computer = Interpreter::from_source("3,3,1105,-1,9,1101,0,0,12,4,12,99,1".to_string());
-    assert_eq!(vec![0], computer.run(vec![0]));
+    let mut outputs = vec![];
+    computer.run(|| {Some(0)}, |o| {outputs.push(o)});
+    assert_eq!(vec![0], outputs);
 }
 
 #[test]
 fn test_jf_pp_nz() {
     let mut computer = Interpreter::from_source("3,12,6,12,15,1,13,14,13,4,13,99,-1,0,1,9".to_string());
-    assert_eq!(vec![1], computer.run(vec![42]));
+    let mut outputs = vec![];
+    computer.run(|| {Some(42)}, |o| {outputs.push(o)});
+    assert_eq!(vec![1], outputs);
 }
 
 #[test]
 fn test_jt_ii_nz() {
     let mut computer = Interpreter::from_source("3,3,1105,-1,9,1101,0,0,12,4,12,99,1".to_string());
-    assert_eq!(vec![1], computer.run(vec![42]));
+    let mut outputs = vec![];
+    computer.run(|| {Some(42)}, |o| {outputs.push(o)});
+    assert_eq!(vec![1], outputs);
 }

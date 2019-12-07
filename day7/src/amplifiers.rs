@@ -16,7 +16,11 @@ impl Amplifiers {
             let p = self.settings[i];
             let mut computer = Interpreter::from_source(self.source.clone());
             let inputs = vec![p, v];
-            let outputs = computer.run(inputs);
+            let mut input_cursor = 0;
+            let mut outputs = vec![];
+            let input = || { let result = inputs[input_cursor]; input_cursor +=1; return Some(result); };
+            let output = |v| { outputs.push(v); };
+            computer.run(input, output);
             v = outputs[0]
         }
 
@@ -37,7 +41,7 @@ fn test_amplifiers_2() {
     let settings = vec![0, 1, 2, 3, 4];
     let program = "3,23,3,24,1002,24,10,24,1002,23,-1,23,101,5,23,23,1,24,23,23,4,23,99,0,0";
     let amplifiers = Amplifiers::new(&program.to_string(), settings);
-    assert_eq!(54320, amplifiers.run());
+    assert_eq!(54321, amplifiers.run());
 }
 
 #[test]
