@@ -7,7 +7,7 @@ use amplifiers::Amplifiers;
 fn main() {
     let source = std::fs::read_to_string("test-data.txt").unwrap();
 
-    let permutations = (0..5).permutations(5);
+    let permutations = (5..=9).permutations(5);
 
     let mut max = 0;
     for settings in permutations {
@@ -17,5 +17,5 @@ fn main() {
             max = v;
         }
     }
-    println!("{}", max);
+    println!("max = {}", max);
 }

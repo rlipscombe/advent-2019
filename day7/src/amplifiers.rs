@@ -1,6 +1,5 @@
-use std::thread;
 use std::sync::mpsc;
-use std::time::Duration;
+use std::thread;
 
 use crate::interpreter::Interpreter;
 
@@ -11,7 +10,10 @@ pub struct Amplifiers {
 
 impl Amplifiers {
     pub fn new(source: &String, settings: Vec<i32>) -> Amplifiers {
-        Amplifiers { source: source.clone(), settings }
+        Amplifiers {
+            source: source.clone(),
+            settings,
+        }
     }
 
     pub fn run(self) -> i32 {
@@ -34,19 +36,41 @@ impl Amplifiers {
         sd.send(self.settings[4]).unwrap();
 
         s0.send(0).unwrap();
-        let v = r0.recv().unwrap();
-        v
+
+        loop {
+            match r0.recv() {
+                Ok(v) => {
+                    // Feedback
+                    println!("v = {}", v);
+                    match s0.send(v) {
+                        Ok(()) => {
+                        }
+                        Err(_) => {
+                            return v;
+                        }
+                    }
+                }
+                Err(e) => {
+                    eprintln!("{:?}", e);
+                }
+            }
+        }
     }
 }
 
 fn spawn(name: String, source: &String, input: mpsc::Receiver<i32>, output: mpsc::Sender<i32>) {
     let mut i = Interpreter::from_source(source.clone());
-    thread::Builder::new().name(name).spawn(move || {
-        println!("spawning");
-        let inp = || { input.recv().ok() };
-        let outp = |x| { output.send(x).unwrap(); };
-        i.run(inp, outp);
-    }).unwrap();
+    thread::Builder::new()
+        .name(name)
+        .spawn(move || {
+            println!("spawning");
+            let inp = || input.recv().ok();
+            let outp = |x| {
+                output.send(x).unwrap();
+            };
+            i.run(inp, outp);
+        })
+        .unwrap();
 }
 
 #[test]
