@@ -8,7 +8,7 @@ defmodule Day8 do
 
     count = div(length(pixels), width * height)
     IO.puts("#{count} layers")
-    layers = Enum.zip(1..count, Enum.chunk_every(pixels, width * height))
+    layers = Enum.chunk_every(pixels, width * height)
 
     dump_layers(layers, width, height)
 
@@ -21,9 +21,12 @@ defmodule Day8 do
 
     result = count(layer, 1) * count(layer, 2)
     IO.puts("result: #{result}")
+
+    final = compose_layers(layers)
+    dump_layer(final, width)
   end
 
-  defp count({_n, layer}, v) do
+  defp count(layer, v) do
     Enum.count(layer, fn x -> x == v end)
   end
 
@@ -33,8 +36,7 @@ defmodule Day8 do
     end
   end
 
-  defp dump_layer({n, layer}, width) do
-    IO.puts("Layer #{n}")
+  defp dump_layer(layer, width) do
     rows = Enum.chunk_every(layer, width)
 
     for row <- rows do
@@ -42,5 +44,23 @@ defmodule Day8 do
     end
 
     IO.puts("")
+  end
+
+  def compose_layers(layers) do
+    # Layers are given from front to back.
+    # 0 is black, 1 is white, 2 is transparent
+    Enum.reduce(
+      layers,
+      fn next, curr ->
+        Enum.zip(next, curr)
+        |> Enum.map(fn
+          # 0, 1 => take current
+          {_b, 0} -> 0
+          {_b, 1} -> 1
+          # 2 => take next
+          {b, 2} -> b
+        end)
+      end
+    )
   end
 end
