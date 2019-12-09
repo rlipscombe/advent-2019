@@ -74,7 +74,7 @@ impl Interpreter {
     {
         loop {
             let instr = self.read_instr(self.ip);
-            println!("{}: {}: {:?}", self.ip, self.read(self.ip), instr);
+            println!("{}: {}: {:?}", self.ip, self.memory[self.ip], instr);
             match instr {
                 Instr::Add(lhs, rhs, trg) => {
                     self.put(trg, self.apply(|x, y| x + y, lhs, rhs));
@@ -186,8 +186,9 @@ impl Interpreter {
     }
 
     fn read(&self, p: usize) -> i64 {
+        const INVALID_MEMORY: i64 = 66;
         let val = if self.memory.len() < p {
-            0
+            INVALID_MEMORY
         } else {
             self.memory[p]
         };
@@ -259,7 +260,7 @@ impl Interpreter {
     }
 
     fn write(&mut self, p: usize, v: i64) {
-        const INVALID_MEMORY: i64 = 99; // Halt
+        const INVALID_MEMORY: i64 = 66;
         while p > self.memory.len() {
             self.memory.resize(self.memory.len() * 2, INVALID_MEMORY);
         }
