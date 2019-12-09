@@ -1,3 +1,5 @@
+use log::*;
+
 pub struct Interpreter {
     memory: Vec<i64>,
     ip: usize,
@@ -60,6 +62,7 @@ impl Interpreter {
     }
 
     pub fn new(bytes: Vec<i64>) -> Interpreter {
+        println!("init, size = {}", bytes.len());
         Interpreter {
             memory: bytes,
             ip: 0,
@@ -74,7 +77,7 @@ impl Interpreter {
     {
         loop {
             let instr = self.read_instr(self.ip);
-            println!("{}: {}: {:?}", self.ip, self.memory[self.ip], instr);
+            trace!("{}: {}: {:?}", self.ip, self.memory[self.ip], instr);
             match instr {
                 Instr::Add(lhs, rhs, trg) => {
                     self.put(trg, self.apply(|x, y| x + y, lhs, rhs));
@@ -142,9 +145,9 @@ impl Interpreter {
                     self.ip += 4;
                 }
                 Instr::AdjBp(val) => {
-                    println!("; bp <- bp + {:?}", val);
+                    trace!("; bp <- bp + {:?}", val);
                     self.bp += self.get(val);
-                    println!("; bp <- {}", self.bp);
+                    trace!("; bp <- {}", self.bp);
                     self.ip += 2;
                 }
                 Instr::Halt => {
@@ -168,6 +171,7 @@ impl Interpreter {
             Value::Rel(p) => self.read((self.bp + p) as usize),
         }
     }
+
     fn put(&mut self, trg: Target, val: i64) {
         match trg {
             Target::Pos(p) => self.write(p, val),
@@ -179,10 +183,10 @@ impl Interpreter {
         match dst {
             Dest::Pos(p) => self.ip = self.read(p) as usize,
             Dest::Imm(p) => self.ip = p as usize,
-            Dest::Rel(p) => self.ip = (self.bp + p) as usize,
+            Dest::Rel(p) => self.ip = self.read((self.bp + p) as usize) as usize,
         }
 
-        println!("; ip <- {}", self.ip);
+        trace!("; ip <- {}", self.ip);
     }
 
     fn read(&self, p: usize) -> i64 {
@@ -192,7 +196,7 @@ impl Interpreter {
         } else {
             self.memory[p]
         };
-        println!("; [{}] = {}", p, val);
+        trace!("; [{}] = {}", p, val);
         val
     }
 
@@ -264,7 +268,7 @@ impl Interpreter {
         while p > self.memory.len() {
             self.memory.resize(self.memory.len() * 2, INVALID_MEMORY);
         }
-        println!("; [{}] <- {}", p, v);
+        trace!("; [{}] <- {}", p, v);
         self.memory[p] = v;
     }
 }
