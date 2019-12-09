@@ -1,18 +1,44 @@
 pub struct Interpreter {
     memory: Vec<i64>,
     ip: usize,
-    bp: usize,
+    bp: i64,
 }
 
 #[derive(Debug)]
-enum OpCode {
-    Add, Mul, In, Out, Jt, Jf, Eq, Lt, AdjBp, Halt
+enum Value {
+    Pos(usize),
+    Imm(i64),
+    Rel(i64),
 }
+
 #[derive(Debug)]
-enum Mode {
-    Pos, Imm, Rel
+enum Target {
+    Pos(usize),
+    Rel(i64),
 }
-type Instr = (OpCode, Mode, Mode);
+
+#[derive(Debug)]
+enum Dest {
+    Imm(i64),
+    Rel(i64),
+}
+
+const OP_ADD: u64 = 1;
+const OP_MUL: u64 = 2;
+
+#[derive(Debug)]
+enum Instr {
+    Add(Value, Value, Target),
+    Mul(Value, Value, Target),
+    In(Target),
+    Out(Value),
+    Jt(Value, Dest),
+    Jf(Value, Dest),
+    Eq(Value, Value, Target),
+    Lt(Value, Value, Target),
+    AdjBp(Value),
+    Halt,
+}
 
 impl Interpreter {
     pub fn from_source(source: String) -> Interpreter {
@@ -41,186 +67,222 @@ impl Interpreter {
             let instr = self.read_instr(self.ip);
             println!("{}: {:?}", self.ip, instr);
             match instr {
-                (OpCode::Add, lmode, rmode) => {
-                    let lhs = self.read_as(self.ip + 1, lmode);
-                    let rhs = self.read_as(self.ip + 2, rmode);
-                    let trg = self.read(self.ip + 3) as usize;
-                    let result = lhs + rhs;
-                    //print_instr(self.ip, "+", lmode, lhs, rmode, rhs, trg, result);
-                    self.write(trg, result);
+                Instr::Add(lhs, rhs, trg) => {
+                    self.put(trg, self.apply(|x, y| x + y, lhs, rhs));
                     self.ip += 4;
                 }
-                (OpCode::Mul, lmode, rmode) => {
-                    let lhs = self.read_as(self.ip + 1, lmode);
-                    let rhs = self.read_as(self.ip + 2, rmode);
-                    let trg = self.read(self.ip + 3) as usize;
-                    let result = lhs * rhs;
-                    //print_instr(self.ip, "*", lmode, lhs, rmode, rhs, trg, result);
-                    self.write(trg, result);
+                Instr::Mul(lhs, rhs, trg) => {
+                    self.put(trg, self.apply(|x, y| x * y, lhs, rhs));
                     self.ip += 4;
                 }
-                (OpCode::In, _, _) => {
-                    let p = self.read(self.ip + 1) as usize;
+                Instr::In(trg) => {
                     let value = input().unwrap();
-                    println!(
-                        "{}: [{}] <- in  ; {}",
-                        self.ip,
-                        self.read(self.ip + 1),
-                        value
-                    );
-                    self.write(p, value);
+                    self.put(trg, value);
                     self.ip += 2;
                 }
-                (OpCode::Out, mode, _) => {
-                    let value = self.read_as(self.ip + 1, mode);
-                    println!("{}: out [{}] = {}", self.ip, self.read(self.ip + 1), value);
-                    output(value);
+                Instr::Out(val) => {
+                    output(self.get(val));
                     self.ip += 2;
                 }
-                (OpCode::Jt, lmode, rmode) => {
-                    let val = self.read_as(self.ip + 1, lmode);
-                    let dst = self.read_as(self.ip + 2, rmode) as usize;
-                    println!(
-                        "{}: jt [{}] {}",
-                        self.ip,
-                        self.read(self.ip + 1),
-                        self.read(self.ip + 2)
-                    );
-                    if val != 0 {
-                        self.ip = dst;
+                Instr::Jt(val, dst) => {
+                    if self.get(val) != 0 {
+                        self.jmp(dst);
                     } else {
                         self.ip += 3;
                     }
                 }
-                (OpCode::Jf, lmode, rmode) =>{
-                    let val = self.read_as(self.ip + 1, lmode);
-                    let dst = self.read_as(self.ip + 2, rmode) as usize;
-                    println!(
-                        "{}: jf [{}] [{}]",
-                        self.ip,
-                        self.read(self.ip + 1),
-                        self.read(self.ip + 2)
-                    );
-                    if val == 0 {
-                        self.ip = dst;
+                Instr::Jf(val, dst) => {
+                    if self.get(val) == 0 {
+                        self.jmp(dst);
                     } else {
                         self.ip += 3;
                     }
                 }
-                (OpCode::Eq, lmode, rmode) => {
-                    let lhs = self.read_as(self.ip + 1, lmode);
-                    let rhs = self.read_as(self.ip + 2, rmode);
-                    let trg_p = self.read(self.ip + 3) as usize;
-                    let result = lhs == rhs;
-                    println!(
-                        "{}: [{}] <- [{}] eq [{}]  ; {} == {} = {}",
-                        self.ip,
-                        self.read(self.ip + 3),
-                        self.read(self.ip + 1),
-                        self.read(self.ip + 2),
-                        lhs,
-                        rhs,
-                        result
+                Instr::Eq(lhs, rhs, trg) => {
+                    self.put(
+                        trg,
+                        self.apply(
+                            |x, y| {
+                                if x == y {
+                                    1
+                                } else {
+                                    0
+                                }
+                            },
+                            lhs,
+                            rhs,
+                        ),
                     );
-                    self.write(trg_p, result as i64);
                     self.ip += 4;
                 }
-                (OpCode::Lt, lmode, rmode) => {
-                    let lhs = self.read_as(self.ip + 1, lmode);
-                    let rhs = self.read_as(self.ip + 2, rmode);
-                    let trg_p = self.read(self.ip + 3) as usize;
-                    let result = lhs < rhs;
-                    println!(
-                        "{}: [{}] <- [{}] lt [{}]  ; {} lt {} = {}",
-                        self.ip,
-                        self.read(self.ip + 3),
-                        self.read(self.ip + 1),
-                        self.read(self.ip + 2),
-                        lhs,
-                        rhs,
-                        result
+                Instr::Lt(lhs, rhs, trg) => {
+                    self.put(
+                        trg,
+                        self.apply(
+                            |x, y| {
+                                if x < y {
+                                    1
+                                } else {
+                                    0
+                                }
+                            },
+                            lhs,
+                            rhs,
+                        ),
                     );
-                    self.write(trg_p, result as i64);
                     self.ip += 4;
                 }
-                (OpCode::AdjBp, mode, _) => {
-                    let by = self.read_as(self.ip + 1, mode) as usize;
-                    println!("{}: adjbp {}", self.ip, by);
-                    self.bp += by;
+                Instr::AdjBp(val) => {
+                    self.bp += self.get(val);
                     self.ip += 2;
                 }
-                (OpCode::Halt, _, _) => {
-                    println!("{}: halt", self.ip);
+                Instr::Halt => {
                     return;
                 }
             }
         }
     }
 
+    fn apply<F>(&self, f: F, lhs: Value, rhs: Value) -> i64
+    where
+        F: Fn(i64, i64) -> i64,
+    {
+        f(self.get(lhs), self.get(rhs))
+    }
+
+    fn get(&self, val: Value) -> i64 {
+        match val {
+            Value::Imm(v) => v,
+            Value::Pos(p) => self.read(p),
+            Value::Rel(p) => self.read((self.bp + p) as usize),
+        }
+    }
+    fn put(&mut self, trg: Target, val: i64) {
+        match trg {
+            Target::Pos(p) => self.write(p, val),
+            Target::Rel(p) => self.write((self.bp + p) as usize, val),
+        }
+    }
+
+    fn jmp(&mut self, dst: Dest) {
+        match dst {
+            Dest::Imm(p) => self.ip = p as usize,
+            Dest::Rel(p) => self.ip = (self.bp + p) as usize,
+        }
+    }
+
     fn read(&self, p: usize) -> i64 {
-        if self.memory.len() < p {
+        let val = if self.memory.len() < p {
             0
         } else {
             self.memory[p]
-        }
+        };
+        println!("; [{}] = {}", p, val);
+        val
     }
 
     fn read_instr(&self, p: usize) -> Instr {
         if self.memory.len() < p {
-            (OpCode::Halt, Mode::Pos, Mode::Pos)
+            Instr::Halt
         } else {
             let instr = self.memory[p];
             let op = instr % 100;
             let lmode = (instr / 100) % 10;
-            let rmode = instr / 1000; 
-            (to_opcode(op), to_mode(lmode), to_mode(rmode))
-        }
-    }
+            let rmode = (instr / 1000) % 10;
+            let tmode = (instr / 10000) % 10;
 
-    fn read_as(&self, p: usize, mode: Mode) -> i64 {
-        match mode {
-            Mode::Imm => self.read(p),
-            Mode::Pos => self.read(self.read(p) as usize),
-            Mode::Rel => self.read(self.bp + self.read(p) as usize)
+            match op {
+                OP_ADD => {
+                    let lhs = to_val(self.memory[p + 1], lmode);
+                    let rhs = to_val(self.memory[p + 2], rmode);
+                    let trg = to_trg(self.memory[p + 3], tmode);
+                    Instr::Add(lhs, rhs, trg)
+                }
+               OP_MUL => {
+                    let lhs = to_val(self.memory[p + 1], lmode);
+                    let rhs = to_val(self.memory[p + 2], rmode);
+                    let trg = to_trg(self.memory[p + 3], tmode);
+                    Instr::Mul(lhs, rhs, trg)
+                }
+                OP_IN => {
+                    let trg = to_trg(self.memory[p + 1], lmode);
+                    Instr::In(trg)
+                }
+                OP_OUT => {
+                    let val = to_val(self.memory[p + 1], lmode);
+                    Instr::Out(val)
+                }
+                OP_JT => {
+                    let val = to_val(self.memory[p + 1], lmode);
+                    let dst = to_dst(self.memory[p + 2], rmode);
+                    Instr::Jt(val, dst)
+                }
+                OP_JF => {
+                    let val = to_val(self.memory[p + 1], lmode);
+                    let dst = to_dst(self.memory[p + 2], rmode);
+                    Instr::Jf(val, dst)
+                }
+                OP_EQ => {
+                    let lhs = to_val(self.memory[p + 1], lmode);
+                    let rhs = to_val(self.memory[p + 2], rmode);
+                    let trg = to_trg(self.memory[p + 3], tmode);
+                    Instr::Eq(lhs, rhs, trg)
+                }
+                OP_LT => {
+                    let lhs = to_val(self.memory[p + 1], lmode);
+                    let rhs = to_val(self.memory[p + 2], rmode);
+                    let trg = to_trg(self.memory[p + 3], tmode);
+                    Instr::Lt(lhs, rhs, trg)
+                }
+                OP_ADJBP => {
+                    let val = to_val(self.memory[p + 1], lmode);
+                    Instr::AdjBp(val)
+                }
+                OP_HALT => Instr::Halt,
+                _ => panic!("Invalid opcode in {}", instr),
+            }
         }
     }
 
     fn write(&mut self, p: usize, v: i64) {
         const INVALID_MEMORY: i64 = 99; // Halt
-        if p > self.memory.len() {
-            self.memory.resize(p + 1, INVALID_MEMORY);
+        while p > self.memory.len() {
+            self.memory.resize(self.memory.len() * 2, INVALID_MEMORY);
         }
+        println!("; [{}] <- {}", p, v);
         self.memory[p] = v;
     }
 }
 
-fn to_opcode(op: i64) -> OpCode {
-    match op {
-        1 => OpCode::Add,
-        2 => OpCode::Mul,
-        3 => OpCode::In, 
-        4 => OpCode::Out,
-        5 => OpCode::Jt,
-        6 => OpCode::Jf,
-        7 => OpCode::Eq,
-        8 => OpCode::Lt,
-        9 => OpCode::AdjBp,
-        99 => OpCode::Halt,
-        _ => {
-            panic!("Invalid opcode {}", op);
-        }
-    }
-}
-
-fn to_mode(mode: i64) -> Mode {
+fn to_val(val: i64, mode: i64) -> Value {
     match mode {
-        0 => Mode::Pos,
-        1 => Mode::Imm,
-        2 => Mode::Rel,
+        0 => Value::Pos(val as usize),
+        1 => Value::Imm(val),
+        2 => Value::Rel(val),
         _ => {
             panic!("Invalid mode {}", mode);
         }
     }
+}
+
+fn to_trg(val: i64, mode: i64) -> Target {
+    match mode {
+        0 => Target::Pos(val as usize),
+        2 => Target::Rel(val),
+        _ => {
+            panic!("Invalid mode {}", mode);
+        }
+    }
+}
+
+fn to_dst(val: i64, mode: i64) -> Dest {
+    match mode {
+        1 => Dest::Imm(val),
+        2 => Dest::Rel(val),
+        _ => {
+            panic!("Invalid mode {}", mode);
+        }
+    } 
 }
 
 #[test]
