@@ -19,12 +19,10 @@ enum Target {
 
 #[derive(Debug)]
 enum Dest {
+    Pos(usize),
     Imm(i64),
     Rel(i64),
 }
-
-const OP_ADD: u64 = 1;
-const OP_MUL: u64 = 2;
 
 #[derive(Debug)]
 enum Instr {
@@ -39,6 +37,17 @@ enum Instr {
     AdjBp(Value),
     Halt,
 }
+
+const OP_ADD: i64 = 1;
+const OP_MUL: i64 = 2;
+const OP_IN: i64 = 3;
+const OP_OUT: i64 = 4;
+const OP_JT: i64 = 5;
+const OP_JF: i64 = 6;
+const OP_LT: i64 = 7;
+const OP_EQ: i64 = 8;
+const OP_ADJBP: i64 = 9;
+const OP_HALT: i64 = 99;
 
 impl Interpreter {
     pub fn from_source(source: String) -> Interpreter {
@@ -65,7 +74,7 @@ impl Interpreter {
     {
         loop {
             let instr = self.read_instr(self.ip);
-            println!("{}: {:?}", self.ip, instr);
+            println!("{}: {}: {:?}", self.ip, self.read(self.ip), instr);
             match instr {
                 Instr::Add(lhs, rhs, trg) => {
                     self.put(trg, self.apply(|x, y| x + y, lhs, rhs));
@@ -133,7 +142,9 @@ impl Interpreter {
                     self.ip += 4;
                 }
                 Instr::AdjBp(val) => {
+                    println!("; bp <- bp + {:?}", val);
                     self.bp += self.get(val);
+                    println!("; bp <- {}", self.bp);
                     self.ip += 2;
                 }
                 Instr::Halt => {
@@ -166,9 +177,12 @@ impl Interpreter {
 
     fn jmp(&mut self, dst: Dest) {
         match dst {
+            Dest::Pos(p) => self.ip = self.read(p) as usize,
             Dest::Imm(p) => self.ip = p as usize,
             Dest::Rel(p) => self.ip = (self.bp + p) as usize,
         }
+
+        println!("; ip <- {}", self.ip);
     }
 
     fn read(&self, p: usize) -> i64 {
@@ -239,7 +253,7 @@ impl Interpreter {
                     Instr::AdjBp(val)
                 }
                 OP_HALT => Instr::Halt,
-                _ => panic!("Invalid opcode in {}", instr),
+                _ => panic!("{}: Invalid instruction {}", p, instr),
             }
         }
     }
@@ -277,12 +291,13 @@ fn to_trg(val: i64, mode: i64) -> Target {
 
 fn to_dst(val: i64, mode: i64) -> Dest {
     match mode {
+        0 => Dest::Pos(val as usize),
         1 => Dest::Imm(val),
         2 => Dest::Rel(val),
         _ => {
             panic!("Invalid mode {}", mode);
         }
-    } 
+    }
 }
 
 #[test]
@@ -397,4 +412,31 @@ fn test_jt_ii_nz() {
     let mut outputs = vec![];
     computer.run(|| Some(42), |o| outputs.push(o));
     assert_eq!(vec![1], outputs);
+}
+
+#[test]
+fn quine() {
+    let source = "109,1,204,-1,1001,100,1,100,1008,100,16,101,1006,101,0,99";
+    let mut computer = Interpreter::from_source(source.to_string());
+    let mut outputs = vec![];
+    computer.run(|| None, |o| outputs.push(o));
+    assert_eq!(vec![109,1,204,-1,1001,100,1,100,1008,100,16,101,1006,101,0,99], outputs);
+}
+
+#[test]
+fn test_large_mul() {
+    let source = "1102,34915192,34915192,7,4,7,99,0";
+    let mut computer = Interpreter::from_source(source.to_string());
+    let mut outputs = vec![];
+    computer.run(|| None, |o| outputs.push(o));
+    assert_eq!(vec![1219070632396864], outputs);
+}
+
+#[test]
+fn test_large_output() {
+    let source = "104,1125899906842624,99";
+    let mut computer = Interpreter::from_source(source.to_string());
+    let mut outputs = vec![];
+    computer.run(|| None, |o| outputs.push(o));
+    assert_eq!(vec![1125899906842624], outputs);
 }
